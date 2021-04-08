@@ -22,10 +22,19 @@ namespace ProducerConsumer
         public void AddValue(int index, int value)
         {
             index = Math.Abs(index) % ProducerCount;
-            Monitor.Enter(values);
-            values[index].Enqueue(value);
-            Monitor.PulseAll(values);
-            Monitor.Exit(values);
+            try
+            {
+                Monitor.Enter(values);
+                while (values[index].Count >= 2)
+                    Monitor.Wait(values);
+                Console.WriteLine("Produser #{0} adds {1}", index, value);
+                values[index].Enqueue(value);
+                Monitor.PulseAll(values);
+            }
+            finally
+            {
+                Monitor.Exit(values);
+            }
         }
 
         public int[] ConsumeValues()
@@ -33,17 +42,25 @@ namespace ProducerConsumer
             var result = new int[ProducerCount];
             int i = 0;
             Monitor.Enter(values);
-            foreach (var queue in values)
+            try
             {
-                
-                while (queue.Count == 0)
+                foreach (var queue in values)
                 {
-                    Monitor.Wait(values);
-                }
-                result[i++] = queue.Dequeue();
+                    while (queue.Count == 0)
+                    {
+                        Monitor.Wait(values);
+                    }
 
+                    result[i++] = queue.Dequeue();
+                }
+
+                Monitor.PulseAll(values);
             }
-            Monitor.Exit(values);
+            finally
+            {
+                Monitor.Exit(values);
+            }
+
             return result;
         }
     }

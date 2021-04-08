@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ProducerConsumer
 {
-    class Producer
+    class Consumer
     {
         private CommonData Data
         {
@@ -15,41 +15,32 @@ namespace ProducerConsumer
             set;
         }
 
-        private int index;
-        public int Index
-        {
-            get => index;
-            set => index = Math.Abs(value) % CommonData.ProducerCount;
-        }
-
         private Thread t = null;
         private bool stop = false;
-        
-        private static Random r = new Random((int)DateTime.Now.Ticks);
 
-        public Producer(CommonData data, int index)
+
+        public Consumer(CommonData data)
         {
             Data = data;
-            Index = index;
         }
 
         public void Start()
         {
             if (t?.IsAlive == true) return;
             stop = false;
-            t = new Thread(new ThreadStart(produce));
+            t = new Thread(new ThreadStart(consume));
             t.Start();
         }
 
-        private void produce()
+        private void consume()
         {
             try
             {
                 while (!stop)
                 {
-                    Thread.Sleep(1000+Index*r.Next(2000));
-                    var result = r.Next(0, 100);
-                    Data.AddValue(Index, result);
+                    Console.WriteLine("Consumer: Ожидание данных");
+                    var values = Data.ConsumeValues();
+                    Console.WriteLine(values.Sum());
                 }
             } catch { }
         }
